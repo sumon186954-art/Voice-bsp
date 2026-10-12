@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>UME Live Room - Complete with Firebase</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans Bengali', sans-serif;
+  background: #0a0a0a;
+  color: #fff;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+.app {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  overflow: hidden;
+  background: #111;
+}
+
+.page-list {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #0d2a1f 0, #0a1f18 40%, #071510 100%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  transition: transform .45s cubic-bezier(0.4,0,0.2,1);
+}
+
+.page-list.hidden {
+  transform: translateX(-100%);
+}
+
+.list-header {
+  padding: 36px 16px 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-id-badge {
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(245,197,24,0.4);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #f5c518;
+}
+
+.page-title {
+  font-size: 22px;
+  font-weight: 700;
+  padding: 4px 16px 12px;
+}
+
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 16px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.tab {
+  padding: 6px 14px;
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: rgba(255,255,255,0.08);
+  color: #aaa;
+  cursor: pointer;
+  transition: all .2s;
+}
+
+.tab.active {
+  background: #fff;
+  color: #000;
+}
+
+.room-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 12px 80px;
+  scrollbar-width: none;
+}
+
+.room-list::-webkit-scrollbar {
+  display: none;
+}
+
+.room-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 10px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.room-card:active {
+  background: rgba(255,255,255,0.1);
+}
+
+.room-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #222;
+  flex-shrink: 0;
+}
+
+.room-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.room-name {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-desc {
+  font-size: 12px;
+  color: #aaa;
+  margin-top: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: #00e676;
+}
+
+.room-gift {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#ff416c,#ff4b2b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.bottom-nav {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(10,30,22,0.95);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  z-index: 20;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  color: #888;
+  position: relative;
+  cursor: pointer;
+}
+
+.nav-item.active {
+  color: #00e676;
+}
+
+.nav-item .icon {
+  font-size: 22px;
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -10px;
+  background: #ff1744;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.page-room {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .4s ease;
+}
+
+.page-room.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.room-bg {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg,#f8c8d8 0,#e8a0b8 30%,#c080a0 60%,#906080 100%);
+}
+
+.room-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 18%,rgba(255,215,0,0.35) 0,transparent 50%),radial-gradient(circle at 15% 78%,rgba(255,182,193,0.7) 0,transparent 22%),radial-gradient(circle at 50% 88%,rgba(255,105,180,0.6) 0,transparent 28%),radial-gradient(circle at 85% 72%,rgba(255,182,193,0.65) 0,transparent 22%),radial-gradient(circle at 30% 92%,rgba(255,192,203,0.5) 0,transparent 18%),radial-gradient(circle at 70% 95%,rgba(255,105,180,0.4) 0,transparent 20%);
+}
+
+.room-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center bottom,transparent 15%,rgba(0,0,0,0.55) 100%);
+}
+
+.room-top {
+  position: relative;
+  z-index: 10;
+  padding: 24px 12px 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.room-info-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.room-title-badge {
+  background: rgba(0,0,0,0.45);
+  padding: 5px 12px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.online-count {
+  background: rgba(0,0,0,0.4);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  color: #00e676;
+}
+
+.top-right {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.icon-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  cursor: pointer;
+  border: 0;
+  color: #fff;
+}
+
+.seats-area {
+  position: relative;
+  z-index: 5;
+  flex: 0 0 auto;
+  padding: 2px 4px 0;
+}
+
+.seats-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px 3px;
+  padding: 0 2px;
+}
+
+.seat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+}
+
+.seat-avatar-wrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.35);
+  border: 1.8px solid rgba(255,255,255,0.3);
+  overflow: hidden;
+  transition: all .2s;
+}
+
+.seat.occupied .seat-avatar-wrap {
+  border-color: #f5c518;
+  box-shadow: 0 0 8px rgba(245,197,24,0.4);
+}
+
+.seat.me .seat-avatar-wrap {
+  border-color: #00e676;
+  box-shadow: 0 0 10px rgba(0,230,118,0.5);
+}
+
+.seat-avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.seat-number {
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.seat.occupied .seat-number {
+  color: #f5c518;
+}
+
+.seat.me .seat-number {
+  color: #00e676;
+}
+
+.seat-name {
+  font-size: 8px;
+  margin-top: 1px;
+  max-width: 48px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+.special-features-bar {
+  position: relative;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  padding: 2px 10px;
+  margin-top: 2px;
+}
+
+.sf-round-btn {
+  width: 26mm;
+  height: 26mm;
+  max-width: 78px;
+  max-height: 78px;
+  border-radius: 50%;
+  background: linear-gradient(135deg,#ff1744 0,#ff5722 50%,#ffeb3b 100%);
+  border: 3px solid rgba(255,255,255,0.9);
+  box-shadow: 0 0 16px rgba(255,193,7,0.7),0 0 25px rgba(255,23,68,0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform .15s,box-shadow .15s,opacity .3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.sf-round-btn.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sf-round-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 0 8px rgba(255,193,7,0.9),0 0 15px rgba(255,23,68,0.8);
+}
+
+.chat-area {
+  position: relative;
+  z-index: 8;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px 10px 75px;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  scrollbar-width: none;
+}
+
+.chat-messages::-webkit-scrollbar {
+  display: none;
+}
+
+.chat-msg {
+  background: rgba(0,0,0,0.35);
+  padding: 5px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  max-width: 85%;
+  align-self: flex-start;
+  line-height: 1.35;
+}
+
+.chat-msg .user {
+  color: #f5c518;
+  font-weight: 600;
+}
+
+.chat-msg.system {
+  background: rgba(0,230,118,0.15);
+  color: #a0f0c0;
+  align-self: center;
+  font-size: 11px;
+}
+
+.chat-msg.gift-msg {
+  background: rgba(255,65,108,0.25);
+}
+
+.room-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 15;
+  padding: 8px 8px 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(transparent,rgba(0,0,0,0.7));
+}
+
+.chat-btn {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  background: rgba(255,255,255,0.15);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  padding: 0;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.seat-emoji-btn {
+  width: 52px;
+  height: 52px;
+  flex: none;
+  background: rgba(255,193,7,0.25);
+  border: 1px solid rgba(255,193,7,0.4);
+  border-radius: 50%;
+  padding: 0;
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  cursor: pointer;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.gift-btn {
+  background: linear-gradient(135deg,#ff416c,#ff4b2b);
+}
+
+.mic-btn {
+  background: rgba(0,230,118,0.25);
+  display: none;
+}
+
+.mic-btn.active-mic {
+  background: rgba(0,230,118,0.85);
+}
+
+.mic-btn.muted-mic {
+  background: rgba(255,23,68,0.85);
+}
+
+.game-btn {
+  background: rgba(100,80,255,0.35);
+}
+
+.msg-popup-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 50;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.msg-popup-overlay.show {
+  display: flex;
+}
+
+.msg-popup {
+  width: 100%;
+  background: #1a1a1a;
+  border-radius: 18px 18px 0 0;
+  padding: 16px;
+  padding-bottom: 24px;
+  animation: slideUp .3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.msg-popup-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #f5c518;
+  text-align: center;
+}
+
+.msg-popup-input {
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 14px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 15px;
+  outline: 0;
+  margin-bottom: 12px;
+}
+
+.msg-popup-input::placeholder {
+  color: rgba(255,255,255,0.45);
+}
+
+.msg-popup-btns {
+  display: flex;
+  gap: 10px;
+}
+
+.msg-popup-btns button {
+  flex: 1;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.msg-cancel {
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+}
+
+.msg-send {
+  background: linear-gradient(90deg,#00c853,#00e676);
+  color: #fff;
+}
+
+.emoji-popup-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 50;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.emoji-popup-overlay.show {
+  display: flex;
+}
+
+.emoji-popup {
+  width: 100%;
+  background: #1a1a1a;
+  border-radius: 18px 18px 0 0;
+  padding: 16px;
+  padding-bottom: 28px;
+  animation: slideUp .3s ease;
+}
+
+.emoji-popup-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #00e676;
+  text-align: center;
+}
+
+.emoji-grid {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.emoji-item {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: transform .15s,background .15s;
+}
+
+.emoji-item:active {
+  transform: scale(0.9);
+  background: rgba(255,255,255,0.2);
+}
+
+.emoji-close {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gift-popup-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 50;
+  display: none;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.gift-popup-overlay.show {
+  display: flex;
+}
+
+.gift-popup {
+  width: 100%;
+  background: #1a1a1a;
+  border-radius: 18px 18px 0 0;
+  padding: 16px;
+  padding-bottom: 28px;
+  animation: slideUp .3s ease;
+}
+
+.gift-popup-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: #ff416c;
+  text-align: center;
+}
+
+.gift-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.gift-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.gift-tab {
+  padding: 5px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.08);
+  color: #aaa;
+  cursor: pointer;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  transition: all .2s;
+}
+
+.gift-tab.active {
+  background: linear-gradient(135deg,#ff416c,#ff4b2b);
+  color: #fff;
+  border-color: rgba(255,255,255,0.4);
+}
+
+.gift-grid {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 10px;
+  margin-bottom: 14px;
+  min-height: 120px;
+}
+
+.gift-item {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  cursor: pointer;
+  margin: 0 auto;
+  border: 2px solid transparent;
+  transition: transform .15s,background .15s,border-color .15s;
+}
+
+.gift-item.selected {
+  border-color: #f5c518;
+  background: rgba(245,197,24,0.2);
+}
+
+.gift-item:active {
+  transform: scale(0.9);
+}
+
+.gift-close {
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.1);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.gift-fly {
+  position: absolute;
+  font-size: 36px;
+  z-index: 200;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5));
+  transition: left 1.4s cubic-bezier(0.22,0.61,0.36,1),top 1.4s cubic-bezier(0.22,0.61,0.36,1),opacity 1.4s ease,transform 1.4s ease;
+}
+
+.toast {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%,-50%);
+  background: rgba(0,0,0,0.75);
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 20px;
+  font-size: 13px;
+  z-index: 300;
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+}
+
+.toast.show {
+  opacity: 1;
+}
+
+#gameOverlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 9999;
+  background: #030712;
+}
+
+#gameOverlay.show {
+  display: block;
+}
+
+#gameFrame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.game-close-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10001;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.75);
+  border: 2px solid rgba(255,255,255,0.4);
+  color: #fff;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+.game-close-btn:active {
+  transform: scale(0.92);
+}
+</style>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-database-compat.js"></script>
+</head>
+<body>
+<div class="app">
+<div class="page-list" id="listPage">
+<div class="list-header">
+<div class="user-info">
+<div class="header-id-badge">ID: 100765365</div>
+</div>
+</div>
+<div class="page-title">Live Rooms</div>
+<div class="tabs" id="tabs">
+<div class="tab active" data-tab="all">সব</div>
+<div class="tab" data-tab="bd">🇧🇩 BD</div>
+<div class="tab" data-tab="pk">🇵🇰 PK</div>
+<div class="tab" data-tab="ph">🇵🇭 PH</div>
+<div class="tab" data-tab="hot">🔥 Hot</div>
+</div>
+<div class="room-list" id="roomList"></div>
+<div class="bottom-nav">
+<div class="nav-item"><div class="icon">🏠</div><span>Room</span></div>
+<div class="nav-item active"><div class="icon">📦</div><span>Box</span></div>
+<div class="nav-item"><div class="icon">✨</div><span>Moments</span></div>
+<div class="nav-item"><div class="icon">💬</div><span>Messages</span><div class="badge">16</div></div>
+<div class="nav-item"><div class="icon">🐻</div><span>Me</span></div>
+</div>
+</div>
+<div class="page-room" id="roomPage">
+<div class="room-bg"></div>
+<div class="room-top">
+<div class="room-info-top">
+<div class="room-title-badge" id="roomTitle">Live Room</div>
+<div class="online-count" id="onlineCount">👥 0</div>
+</div>
+<div class="top-right">
+<button class="icon-btn" onclick="leaveRoom()">⏻</button>
+</div>
+</div>
+<div class="seats-area">
+<div class="seats-grid" id="seatsGrid"></div>
+</div>
+<div class="special-features-bar">
+<div class="sf-round-btn" id="sfRoundBtn" onclick="triggerBulkAction()" onmousedown="pauseSfTimer()" onmouseup="resumeSfTimer()" ontouchstart="pauseSfTimer()" ontouchend="resumeSfTimer()" title="এক ক্লিকে সব বোর্ড"></div>
+</div>
+<div class="chat-area">
+<div class="chat-messages" id="chatMessages"></div>
+</div>
+<div class="room-bottom">
+<button class="chat-btn" onclick="openMsgPopup()">💬</button>
+<button class="seat-emoji-btn" id="seatEmojiBtn" onclick="openEmojiPopup()">😊</button>
+<button class="action-btn mic-btn" id="seatMicBtn" onclick="toggleSeatMic()">🎤</button>
+<button class="action-btn gift-btn" onclick="openGiftPopup()">🎁</button>
+<button class="action-btn game-btn" onclick="openGame()">🎮</button>
+</div>
+<div class="msg-popup-overlay" id="msgPopup">
+<div class="msg-popup">
+<div class="msg-popup-title">মেসেজ লিখুন</div>
+<input type="text" class="msg-popup-input" id="popupInput" placeholder="এখানে টেক্সট লিখুন..." maxlength="100">
+<div class="msg-popup-btns">
+<button class="msg-cancel" onclick="closeMsgPopup()">বাতিল</button>
+<button class="msg-send" onclick="sendFromPopup()">পাঠান</button>
+</div>
+</div>
+</div>
+<div class="emoji-popup-overlay" id="emojiPopup">
+<div class="emoji-popup">
+<div class="emoji-popup-title">ইমোজি সিলেক্ট করুন</div>
+<div class="emoji-grid" id="emojiGrid"></div>
+<button class="emoji-close" onclick="closeEmojiPopup()">বন্ধ করুন</button>
+</div>
+</div>
+<div class="gift-popup-overlay" id="giftPopup">
+<div class="gift-popup">
+<div class="gift-popup-title">গিফট সিলেক্ট করুন</div>
+<div class="gift-tabs" id="giftTabs">
+<div class="gift-tab active" data-category="lucky">Lucky</div>
+<div class="gift-tab" data-category="cp">CP</div>
+<div class="gift-tab" data-category="country">Country</div>
+<div class="gift-tab" data-category="magic">Magic</div>
+</div>
+<div class="gift-grid" id="giftGrid"></div>
+<button class="gift-close" onclick="closeGiftPopup()">বন্ধ করুন</button>
+</div>
+</div>
+</div>
+<div id="gameOverlay">
+<button class="game-close-btn" onclick="closeGame()" title="গেম বন্ধ করুন">✕</button>
+<iframe id="gameFrame" allow="autoplay"></iframe>
+</div>
+<div class="toast" id="toast"></div>
+</div>
+<script>
+// ==========================================
+// FIREBASE CONFIGURATION
+// ==========================================
+const firebaseConfig = {
+    apiKey: "AIzaSyDzhyiPYzfHePRl9uyaK_-gZ0oHu5xzEmk",
+    authDomain: "voice-room-b0bc4.firebaseapp.com",
+    databaseURL: "https://voice-room-b0bc4-default-rtdb.firebaseio.com",
+    projectId: "voice-room-b0bc4",
+    storageBucket: "voice-room-b0bc4.firebasestorage.app",
+    messagingSenderId: "214182228339",
+    appId: "1:214182228339:web:084fb6faa1095de4e05506"
+};
+
+// Initialize Firebase
+if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+    firebase.initializeApp(firebaseConfig);
+}
+const db = firebase.apps.length ? firebase.database() : null;
+
+const rooms=[{id:1,name:"👑 Rao/King/Agency 👑",desc:"🇵🇰 PK · Most welcome /Everyone 👋",img:33,country:"pk",viewers:142},{id:2,name:"🎂 HaPpY 1st mOnThsary",desc:"🇵🇭 PH · ResPect,...",img:25,country:"ph",viewers:89},{id:3,name:"ভালোবাসার গল্প",desc:"🇧🇩 BD · এখানে এজেন্টী এবং হোস্ট দেওয়া হয় ❤",img:45,country:"bd",viewers:210},{id:4,name:"🌹 SONIYA BD/AGENCY ROOMS 🌹",desc:"🇮🇳 IN · There are a lot of very interested friends ...",img:60,country:"bd",viewers:156},{id:5,name:"🔥 Hot Momma's Agency 🔥",desc:"🇵🇭 PH · Choose your company wisely!",img:32,country:"ph",viewers:98},{id:6,name:"🍀 Mrs Happy 🍀",desc:"🇵🇰 PK · There are a lot of very interested friends ...",img:47,country:"pk",viewers:67},{id:7,name:"💕 Ms.Lovely Room 💕",desc:"🇵🇭 PH · Always Hope But never expect ❌",img:26,country:"ph",viewers:134},{id:8,name:"ZEBBY AGENCY",desc:"🇵🇭 PH · Welcome",img:15,country:"ph",viewers:45},{id:9,name:"💕 ته كينه زه رازم 💕",desc:"🇦🇪 AE · DON'T CHASE ME...",img:11,country:"pk",viewers:78},{id:10,name:"🦁 ROYAL KING AGENCY",desc:"🇧🇩 BD · কয়েন রিচার্জ হোস্টিং ও এজেন্সি দেওয়া হয়",img:68,country:"bd",viewers:189}];
+const names=["Rina","Sakib","Nusrat","Rahim","Mim","Karim","Faria","Imran","Sonia","Joy","Lima","Arif","Tania","Hasan","Ruma","Babu","Nila","Shuvo","Popy","Rafi"];
+const avatars=[1,3,5,7,9,11,12,14,16,20,23,25,28,32,33,36,41,45,47,49,52,55,60,62,65,68];
+const giftCategories={lucky:["🥭","🐅","🦣","🦜","🐠","🕊️","🧊","🚀","🎈","👑"],cp:["💑","💍","💌","🌹","💋","💖","🧸","🎀","🕊","💞"],country:["🇧🇩","🇵🇰","🇵🇭","🇮🇳","🇦🇪","🇸🇦","🇺🇸","🇬🇧","🇹🇷","🇯🇵"],magic:["✨","🔮","🪄","🦄","🐉","⚡","🍄","🌀","🦋","🌌"]};
+const emojiList=["😀","😂","😍","😎","🥳","😭","😡","👍","❤","🔥","✨","🎉","👏","🙏","🌹"];
+
+let currentCategory="lucky";
+let selectedGift="🥭";
+let seatsData=[];
+let mySeat=-1;
+let currentRoom=null;
+let seatMicMuted=false;
+let sfButtonTimer=null;
+let sfTimeRemaining=5000;
+let sfTimerStartTime=null;
+let sfIsPaused=false;
+const myUserId = "User_" + Math.floor(Math.random() * 9000 + 1000);
+
+function init(){
+    renderRoomList("all");
+    renderGiftGrid();
+    renderEmojiGrid();
+    
+    document.getElementById("tabs").addEventListener("click",e=>{
+        if(e.target.classList.contains("tab")){
+            document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+            e.target.classList.add("active");
+            renderRoomList(e.target.dataset.tab);
+        }
+    });
+    
+    document.getElementById("giftTabs").addEventListener("click",e=>{
+        if(e.target.classList.contains("gift-tab")){
+            document.querySelectorAll(".gift-tab").forEach(t=>t.classList.remove("active"));
+            e.target.classList.add("active");
+            currentCategory=e.target.dataset.category;
+            renderGiftGrid();
+        }
+    });
+    
+    document.getElementById("popupInput").addEventListener("keypress",e=>{
+        if(e.key==="Enter")sendFromPopup();
+    });
+}
+
+function renderRoomList(filter){
+    const list=document.getElementById("roomList");
+    list.innerHTML="";
+    const filtered=filter==="all"?rooms:filter==="hot"?rooms.filter(r=>r.viewers>100):rooms.filter(r=>r.country===filter);
+    filtered.forEach(r=>{
+        const div=document.createElement("div");
+        div.className="room-card";
+        div.onclick=()=>enterRoom(r);
+        div.innerHTML=`<img class="room-thumb" src="https://i.pravatar.cc/120?img=${r.img}" alt=""><div class="room-info"><div class="room-name">${r.name}</div><div class="room-desc">${r.desc}</div><div class="room-meta">👥 ${r.viewers} online</div></div><div class="room-gift">🧧</div>`;
+        list.appendChild(div);
+    });
+}
+
+function renderGiftGrid(){
+    const grid=document.getElementById("giftGrid");
+    grid.innerHTML="";
+    const currentList=giftCategories[currentCategory]||giftCategories.lucky;
+    currentList.forEach(g=>{
+        const div=document.createElement("div");
+        div.className="gift-item"+(g===selectedGift?" selected":"");
+        div.textContent=g;
+        div.onclick=()=>selectGift(g);
+        grid.appendChild(div);
+    });
+}
+
+function renderEmojiGrid(){
+    const grid=document.getElementById("emojiGrid");
+    grid.innerHTML="";
+    emojiList.forEach(emoji=>{
+        const div=document.createElement("div");
+        div.className="emoji-item";
+        div.textContent=emoji;
+        div.onclick=()=>sendEmoji(emoji);
+        grid.appendChild(div);
+    });
+}
+
+function sendEmoji(emoji){
+    sendChatMessage("আমি", emoji);
+    closeEmojiPopup();
+    showToast(`${emoji} পাঠানো হয়েছে`);
+}
+
+function selectGift(g){
+    selectedGift=g;
+    renderGiftGrid();
+    showToast(`${g} সিলেক্ট করা হয়েছে`);
+    closeGiftPopup();
+    showSpecialButton();
+}
+
+function showSpecialButton(){
+    const btn=document.getElementById("sfRoundBtn");
+    btn.classList.add("show");
+    if(sfButtonTimer){clearTimeout(sfButtonTimer);}
+    sfTimeRemaining=5000;
+    sfIsPaused=false;
+    sfTimerStartTime=Date.now();
+    sfButtonTimer=setTimeout(()=>{btn.classList.remove("show");},sfTimeRemaining);
+}
+
+function pauseSfTimer(){
+    const btn=document.getElementById("sfRoundBtn");
+    if(!btn.classList.contains("show"))return;
+    if(!sfIsPaused){
+        sfIsPaused=true;
+        if(sfButtonTimer){clearTimeout(sfButtonTimer);sfButtonTimer=null;}
+        const elapsed=Date.now()-sfTimerStartTime;
+        sfTimeRemaining=Math.max(0,sfTimeRemaining-elapsed);
+    }
+}
+
+function resumeSfTimer(){
+    const btn=document.getElementById("sfRoundBtn");
+    if(!btn.classList.contains("show"))return;
+    if(sfIsPaused){
+        sfIsPaused=false;
+        sfTimerStartTime=Date.now();
+        if(sfButtonTimer){clearTimeout(sfButtonTimer);}
+        sfButtonTimer=setTimeout(()=>{btn.classList.remove("show");},sfTimeRemaining);
+    }
+}
+
+function initSeatsData(){
+    let initialSeats = [];
+    for(let i=0;i<42;i++){
+        initialSeats.push({occupied:false, name:"", avatar:0, userId:""});
+    }
+    return initialSeats;
+}
+
+function renderSeats(){
+    const grid=document.getElementById("seatsGrid");
+    grid.innerHTML="";
+    seatsData.forEach((s,i)=>{
+        const div=document.createElement("div");
+        let isMe = (s.userId === myUserId);
+        div.className="seat"+(s.occupied?" occupied":"")+(isMe?" me":"");
+        div.onclick=()=>handleSeatClick(i);
+        let html=`<div class="seat-avatar-wrap">`;
+        if(s.occupied){
+            html+=`<img src="https://i.pravatar.cc/80?img=${s.avatar}" alt="">`;
+        }else{
+            html+=`<div class="seat-number">${i+1}</div>`;
+        }
+        html+=`</div>`;
+        if(s.occupied){
+            html+=`<div class="seat-name">${isMe?"আমি":s.name}</div>`;
+        }
+        div.innerHTML=html;
+        grid.appendChild(div);
+    });
+    updateOnlineCount();
+    updateSeatControlsVisibility();
+}
+
+function updateSeatControlsVisibility(){
+    const micBtn=document.getElementById("seatMicBtn");
+    const seatEmojiBtn=document.getElementById("seatEmojiBtn");
+    if(mySeat!==-1){
+        micBtn.style.display="flex";
+        seatEmojiBtn.style.display="flex";
+        updateSeatMicStateUI();
+    }else{
+        micBtn.style.display="none";
+        seatEmojiBtn.style.display="none";
+    }
+}
+
+function updateSeatMicStateUI(){
+    const micBtn=document.getElementById("seatMicBtn");
+    if(seatMicMuted){
+        micBtn.className="action-btn mic-btn muted-mic";
+        micBtn.innerHTML="🔇";
+    }else{
+        micBtn.className="action-btn mic-btn active-mic";
+        micBtn.innerHTML="🎤";
+    }
+}
+
+function toggleSeatMic(){
+    if(mySeat===-1)return;
+    seatMicMuted=!seatMicMuted;
+    updateSeatMicStateUI();
+    showToast(seatMicMuted?"মাইক্রোফোন মিউট করা হয়েছে":"মাইক্রোফোন আনমিউট করা হয়েছে");
+}
+
+function handleSeatClick(index){
+    if(!currentRoom) return;
+    
+    if(db){
+        const seatRef = db.ref(`rooms/${currentRoom.id}/seats/${index}`);
+        if(seatsData[index].userId === myUserId){
+            seatRef.set({occupied:false, name:"", avatar:0, userId:""});
+            mySeat = -1;
+            seatMicMuted = false;
+            addSystemMsg("আপনি সিট ছেড়ে দিয়েছেন");
+            showToast("সিট ছাড়া হয়েছে");
+        }else if(!seatsData[index].occupied){
+            if(mySeat !== -1){
+                db.ref(`rooms/${currentRoom.id}/seats/${mySeat}`).set({occupied:false, name:"", avatar:0, userId:""});
+            }
+            let newName = "User_" + Math.floor(Math.random()*900+100);
+            let newAvatar = avatars[Math.floor(Math.random()*avatars.length)];
+            seatRef.set({occupied:true, name:newName, avatar:newAvatar, userId:myUserId});
+            mySeat = index;
+            seatMicMuted = false;
+            addSystemMsg(`আপনি সিট ${index+1} এ বসেছেন`);
+            showToast(`সিট ${index+1} নেওয়া হয়েছে`);
+        }else{
+            showToast(seatsData[index].name + " এর সিট");
+        }
+    } else {
+        if(seatsData[index].userId === myUserId){
+            seatsData[index] = {occupied:false, name:"", avatar:0, userId:""};
+            mySeat = -1;
+            renderSeats();
+            showToast("সিট ছাড়া হয়েছে");
+        } else if(!seatsData[index].occupied){
+            if(mySeat !== -1){
+                seatsData[mySeat] = {occupied:false, name:"", avatar:0, userId:""};
+            }
+            seatsData[index] = {occupied:true, name:"আমি", avatar:1, userId:myUserId};
+            mySeat = index;
+            renderSeats();
+            showToast(`সিট ${index+1} নেওয়া হয়েছে`);
+        }
+    }
+}
+
+function updateOnlineCount(){
+    const count = seatsData.filter(s=>s.occupied).length;
+    document.getElementById("onlineCount").textContent=`👥 ${count}`;
+}
+
+function enterRoom(room){
+    currentRoom=room;
+    mySeat=-1;
+    seatMicMuted=false;
+    document.getElementById("roomTitle").textContent=room.name;
+    document.getElementById("listPage").classList.add("hidden");
+    document.getElementById("roomPage").classList.add("active");
+    
+    seatsData = initSeatsData();
+
+    if(db){
+        const roomRef = db.ref(`rooms/${room.id}`);
+        roomRef.child("seats").on("value", (snapshot)=>{
+            if(snapshot.exists()){
+                seatsData = snapshot.val();
+                mySeat = -1;
+                seatsData.forEach((s, idx)=>{
+                    if(s && s.userId === myUserId){
+                        mySeat = idx;
+                    }
+                });
+            }else{
+                roomRef.child("seats").set(seatsData);
+            }
+            renderSeats();
+        });
+        
+        clearChat();
+        addSystemMsg(`"${room.name}" রুমে স্বাগতম!`);
+        
+        roomRef.child("chats").limitToLast(20).on("child_added", (snapshot)=>{
+            const msg = snapshot.val();
+            if(msg){
+                appendChatUI(msg.user, msg.text);
+            }
+        });
+    } else {
+        renderSeats();
+        clearChat();
+        addSystemMsg(`"${room.name}" রুমে স্বাগতম! (Firebase কনফিগার করুন)`);
+    }
+}
+
+function leaveRoom(){
+    if(db && currentRoom && mySeat !== -1){
+        db.ref(`rooms/${currentRoom.id}/seats/${mySeat}`).set({occupied:false, name:"", avatar:0, userId:""});
+    }
+    if(db && currentRoom){
+        db.ref(`rooms/${currentRoom.id}/seats`).off();
+        db.ref(`rooms/${currentRoom.id}/chats`).off();
+    }
+    document.getElementById("listPage").classList.remove("hidden");
+    document.getElementById("roomPage").classList.remove("active");
+    currentRoom=null;
+    mySeat=-1;
+    seatMicMuted=false;
+    closeMsgPopup();
+    closeEmojiPopup();
+    closeGiftPopup();
+    closeGame();
+}
+
+function clearChat(){
+    document.getElementById("chatMessages").innerHTML="";
+}
+
+function sendChatMessage(user, text){
+    if(!currentRoom) return;
+    if(db){
+        const chatRef = db.ref(`rooms/${currentRoom.id}/chats`).push();
+        chatRef.set({user: user, text: text, timestamp: Date.now()});
+    } else {
+        appendChatUI(user, text);
+    }
+}
+
+function appendChatUI(user, text){
+    const box=document.getElementById("chatMessages");
+    const div=document.createElement("div");
+    div.className="chat-msg";
+    div.innerHTML=`<span class="user">${user}:</span> ${text}`;
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+}
+
+function addSystemMsg(text){
+    const box=document.getElementById("chatMessages");
+    const div=document.createElement("div");
+    div.className="chat-msg system";
+    div.textContent=text;
+    box.appendChild(div);
+    box.scrollTop=box.scrollHeight;
+}
+
+function openMsgPopup(){
+    document.getElementById("msgPopup").classList.add("show");
+    document.getElementById("popupInput").value="";
+    setTimeout(()=>document.getElementById("popupInput").focus(),100);
+}
+function closeMsgPopup(){
+    document.getElementById("msgPopup").classList.remove("show");
+}
+function sendFromPopup(){
+    const input=document.getElementById("popupInput");
+    const text=input.value.trim();
+    if(!text)return;
+    sendChatMessage("আমি", text);
+    input.value="";
+    closeMsgPopup();
+}
+
+function openEmojiPopup(){document.getElementById("emojiPopup").classList.add("show");}
+function closeEmojiPopup(){document.getElementById("emojiPopup").classList.remove("show");}
+function openGiftPopup(){renderGiftGrid();document.getElementById("giftPopup").classList.add("show");}
+function closeGiftPopup(){document.getElementById("giftPopup").classList.remove("show");}
+
+function triggerBulkAction(){
+    showSpecialButton();
+    sendChatMessage("আমি", `${selectedGift} এক ক্লিকে সব বোর্ডের মধ্যে পাঠানো হলো!`);
+    const room=document.getElementById("roomPage");
+    const seatEls=document.querySelectorAll(".seat.occupied .seat-avatar-wrap");
+    const roomRect=room.getBoundingClientRect();
+    const btnElem=document.querySelector(".sf-round-btn");
+    const btnRect=btnElem.getBoundingClientRect();
+    const startX=btnRect.left-roomRect.left+btnRect.width/2-18;
+    const startY=btnRect.top-roomRect.top+btnRect.height/2-18;
+    seatEls.forEach((seat,idx)=>{
+        setTimeout(()=>{
+            const rect=seat.getBoundingClientRect();
+            const targetX=rect.left-roomRect.left+rect.width/2-18;
+            const targetY=rect.top-roomRect.top+rect.height/2-18;
+            const fly=document.createElement("div");
+            fly.className="gift-fly";
+            fly.textContent=selectedGift;
+            fly.style.left=startX+"px";
+            fly.style.top=startY+"px";
+            fly.style.opacity="1";
+            fly.style.transform="scale(1) rotate(0deg)";
+            room.appendChild(fly);
+            requestAnimationFrame(()=>{
+                requestAnimationFrame(()=>{
+                    fly.style.left=targetX+"px";
+                    fly.style.top=targetY+"px";
+                    fly.style.opacity="0.3";
+                    fly.style.transform="scale(0.7) rotate(20deg)";
+                });
+            });
+            setTimeout(()=>{if(fly.parentNode)fly.remove();},1400);
+        },idx*50);
+    });
+    showToast(`${selectedGift} সব বোর্ডে পাঠানো হয়েছে!`);
+}
+
+function openGame(){
+    const overlay=document.getElementById("gameOverlay");
+    const frame=document.getElementById("gameFrame");
+    frame.src="rocket-crash-game.html";
+    overlay.classList.add("show");
+    showToast("🎮 Rocket Crash গেম খোলা হচ্ছে...");
+}
+
+function closeGame(){
+    const overlay=document.getElementById("gameOverlay");
+    const frame=document.getElementById("gameFrame");
+    overlay.classList.remove("show");
+    frame.src="about:blank";
+}
+
+function showToast(msg){
+    const t=document.getElementById("toast");
+    t.textContent=msg;
+    t.classList.add("show");
+    setTimeout(()=>t.classList.remove("show"),1800);
+}
+
+init();
+</script>
+</body>
+</html>
